@@ -53,11 +53,31 @@ describe.only('Reduce patch', () => {
             assert.deepEqual(_apply(originalDocument,patches),_apply(expectedOriginalDocument, reducedPatches));
         });
     });
-    describe('When patches contains 1 replace operation and 1 copy operation over the element and 1 delete op over the original path', () => {
-        it('it should return the 2 elements', () => {
+    describe('When patches contains replace operation, copy operation and delete op over the original path', () => {
+        it('it should keep all the operations', () => {
             const patches = [{ "op": "replace", "path": "/biscuits/1",  "value": { "name": "Butter Nut" } },{ "op": "copy", "from": "/biscuits/1", "path": "/best_biscuit" },{ "op": "remove", "path": "/biscuits/1" }];
             const reducedPatches = _reduce(patches);
             assert.deepEqual(reducedPatches, [{ "op": "replace", "path": "/biscuits/1",  "value": { "name": "Butter Nut" } },{ "op": "copy", "from": "/biscuits/1", "path": "/best_biscuit" },{ "op": "remove", "path": "/biscuits/1" }]);
+            assert.deepEqual(_apply(originalDocument,patches),_apply(expectedOriginalDocument, reducedPatches));
+        });
+    });
+    describe('When patches contains replace operation, copy operation, another replace and delete op over the original path', () => {
+        it('it should remove the replace operation after the copy', () => {
+            const patches = [{ "op": "replace", "path": "/biscuits/1",  "value": { "name": "Butter Nut" } },{ "op": "copy", "from": "/biscuits/1", "path": "/best_biscuit" },{ "op": "replace", "path": "/biscuits/1",  "value": { "name": "Choc cookie" } },{ "op": "remove", "path": "/biscuits/1" }];
+            const reducedPatches = _reduce(patches);
+            assert.deepEqual(reducedPatches, [{ "op": "replace", "path": "/biscuits/1",  "value": { "name": "Butter Nut" } },{ "op": "copy", "from": "/biscuits/1", "path": "/best_biscuit" },{ "op": "remove", "path": "/biscuits/1" }]);
+            assert.deepEqual(_apply(originalDocument,patches),_apply(expectedOriginalDocument, reducedPatches));
+        });
+    });
+    describe('When patches contains replace operation, copy operation, another replace and delete op over the original path', () => {
+        it('it should remove the replace operation after the copy', () => {
+            const patches = [{ "op": "replace", "path": "/biscuits/1",  "value": { "name": "Butter Nut" } },
+            { "op": "copy", "from": "/biscuits/1", "path": "/best_biscuit" },{ "op": "replace", "path": "/biscuits/1",  "value": { "name": "Choc cookie" } },
+            { "op": "copy", "from": "/biscuits/1", "path": "/even_better_biscuit" }, { "op": "replace", "path": "/biscuits/1",  "value": { "name": "vanilla cookie" } },{ "op": "remove", "path": "/biscuits/1" }
+            ];
+            const reducedPatches = _reduce(patches);
+            assert.deepEqual(reducedPatches, [{ "op": "replace", "path": "/biscuits/1",  "value": { "name": "Butter Nut" } },{ "op": "copy", "from": "/biscuits/1", "path": "/best_biscuit" },
+            {"op": "replace", "path": "/biscuits/1",  "value": { "name": "Choc cookie" } }, { "op": "copy", "from": "/biscuits/1", "path": "/even_better_biscuit" },{ "op": "remove", "path": "/biscuits/1" }]);
             assert.deepEqual(_apply(originalDocument,patches),_apply(expectedOriginalDocument, reducedPatches));
         });
     });

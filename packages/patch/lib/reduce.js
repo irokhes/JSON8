@@ -29,8 +29,8 @@ module.exports = function reduce(patches) {
             case REPLACE:
                 //get copyOperation
                 const copied = copyOperations[patch.path];
-                reducedPatches[patch.path].filter(e =>e.op === REPLACE && (!copied || e.index > copied.index));
-                reducedPatches[patch.path] = [patch];
+                reducedPatches[patch.path] = reducedPatches[patch.path].filter(e => e.op !== REPLACE || (copied && e.index < copied[copied.length -1].index));
+                reducedPatches[patch.path].push(patch);
                 break;
             case COPY:
                 reducedPatches[patch.path] = [patch];
@@ -49,7 +49,9 @@ module.exports = function reduce(patches) {
     return result;
 };
 function removeOperation(reducedPatches, copyOperations, patch) {
-    if(copyOperations[patch.path]){
+    const copied = copyOperations[patch.path];
+    if(copied){
+        reducedPatches[patch.path] = reducedPatches[patch.path].filter(e => copied && e.index < copied[copied.length -1].index);
         reducedPatches[patch.path].push(patch);
         return;
     }
