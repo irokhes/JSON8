@@ -25,9 +25,10 @@
     "jiff": "^0.7.3",
     "json-patch": "^0.7.0",
     "json-patch-test-suite": "^1.1.0",
-    "jsonpatch": "^3.0.1"
+    "jsonpatch": "^3.0.1",
+    "mocha": "^6.2.0"
   },
   "engines": {
-    "node": ">= 7.6.0"
+    "node": ">= 11.0.0"
   }
 }
