@@ -35,11 +35,7 @@ module.exports = function reduce(patches) {
                 reducedPatches[patch.path].push(patch);
                 break;
             case COPY:
-                reducedPatches[patch.path] = [patch];
-                if(!copyOperations[patch.from]){ 
-                    copyOperations[patch.from] = [];
-                }
-                copyOperations[patch.from].push(patch);
+                copyOperation(reducedPatches, patch, copyOperations);
                 break;
             case MOVE:
                 reducedPatches[patch.path].push(patch);
@@ -54,10 +50,18 @@ module.exports = function reduce(patches) {
     result.forEach(e => delete e.index);
     return result;
 };
+function copyOperation(reducedPatches, patch, copyOperations) {
+    reducedPatches[patch.path] = [patch];
+    if (!copyOperations[patch.from]) {
+        copyOperations[patch.from] = [];
+    }
+    copyOperations[patch.from].push(patch);
+}
+
 function removeOperation(reducedPatches, copyOperations, moveOperations, patch) {
-    const copied = copyOperations[patch.path];
-    if(copied){
-        reducedPatches[patch.path] = reducedPatches[patch.path].filter(e => e.index < copied[copied.length -1].index);
+    const hasCopies = copyOperations[patch.path];
+    if(hasCopies){
+        reducedPatches[patch.path] = reducedPatches[patch.path].filter(e => e.index < hasCopies[hasCopies.length -1].index);
         reducedPatches[patch.path].push(patch);
         return;
     }
@@ -66,10 +70,28 @@ function removeOperation(reducedPatches, copyOperations, moveOperations, patch) 
         //remove all the edit operations from 
         reducedPatches[moved.from] = reducedPatches[moved.from].filter(e => e.op !== REPLACE);
     }
-    if(reducedPatches[patch.path].some(e => e.op === ADD)){
+    const originatedFromCopy = hasBeenCopiedFromOther(copyOperations, patch);
+    const areThereMultipleReplaceOperationInOriginalLocation = originatedFromCopy && reducedPatches[originatedFromCopy.from].filter(e => e.op === REPLACE).length > 1;
+    if(originatedFromCopy && areThereMultipleReplaceOperationInOriginalLocation){
+        //delete replace operation before copy if multiple replace
+        if(areThereMultipleReplaceOperationInOriginalLocation){
+            const indexOfCopyOperation = originatedFromCopy.index - 1;
+            //we remove the replece operation before the COPY
+            for(let i = indexOfCopyOperation; i >= 0; i--){
+                if(reducedPatches[originatedFromCopy.from][i].op === REPLACE){
+                    reducedPatches[originatedFromCopy.from].splice(i, 1);
+                    break;
+                }
+            }
+        }
+    }
+    if(reducedPatches[patch.path].some(e => e.op === ADD || e.op === COPY)){
         reducedPatches[patch.path] = [];
     } else{
         reducedPatches[patch.path] = [...reducedPatches[patch.path].filter(e => e.op !== REPLACE), patch]; 
     };
+}
+function hasBeenCopiedFromOther(copyOperations, patch){
+    return Object.values(copyOperations).flat().find(copy => copy.path === patch.path);
 }
 
